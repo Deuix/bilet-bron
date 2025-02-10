@@ -12,25 +12,46 @@ app.use(cors());
 app.use(express.json());
 
 // Aviasales API endpoints
-const AVIASALES_API_URL = 'https://api.travelpayouts.com/v2';
+const AVIASALES_API_URL = 'https://api.travelpayouts.com';
+
+// City suggestions endpoint
+app.get('/api/cities', async (req, res) => {
+  try {
+    const { term } = req.query;
+    const response = await axios.get(`${AVIASALES_API_URL}/data/en/cities.json`);
+    
+    const cities = response.data.filter((city: any) => 
+      city.name.toLowerCase().includes(String(term).toLowerCase()) ||
+      city.code.toLowerCase().includes(String(term).toLowerCase())
+    ).slice(0, 5);
+    
+    res.json(cities);
+  } catch (error) {
+    console.error('Error fetching cities:', error);
+    res.status(500).json({ error: 'Failed to fetch cities' });
+  }
+});
 
 // Search flights
 app.post('/api/search', async (req, res) => {
   try {
     const { origin, destination, departDate, returnDate, adults } = req.body;
     
-    const response = await axios.get(`${AVIASALES_API_URL}/prices/latest`, {
+    const response = await axios.get(`${AVIASALES_API_URL}/v1/prices/cheap`, {
       params: {
         origin,
         destination,
-        beginning_of_period: departDate,
-        period_type: 'year',
+        depart_date: departDate,
+        return_date: returnDate,
         token: process.env.AVIASALES_API_TOKEN,
+        marker: process.env.PARTNER_ID,
         trip_class: 'Y',
-        currency: 'USD'
-      },
-      headers: {
-        'Accept-Encoding': 'gzip,deflate,compress'
+        currency: 'USD',
+        page: 1,
+        limit: 30,
+        show_to_affiliates: true,
+        sorting: 'price',
+        host: process.env.SITE_URL
       }
     });
 

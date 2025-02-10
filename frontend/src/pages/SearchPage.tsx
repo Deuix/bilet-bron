@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -9,20 +9,42 @@ import {
   Typography,
   Box,
   CircularProgress,
+  Autocomplete,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
 import axios from 'axios';
 
+interface City {
+  code: string;
+  name: string;
+  country_code: string;
+}
+
 const SearchPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [originCities, setOriginCities] = useState<City[]>([]);
+  const [destinationCities, setDestinationCities] = useState<City[]>([]);
   const [formData, setFormData] = useState({
     origin: '',
     destination: '',
     departDate: dayjs(),
     returnDate: dayjs().add(7, 'day'),
   });
+
+  const searchCities = async (term: string, setResults: (cities: City[]) => void) => {
+    if (term.length < 2) return;
+    
+    try {
+      const response = await axios.get(`http://localhost:3001/api/cities`, {
+        params: { term }
+      });
+      setResults(response.data);
+    } catch (error) {
+      console.error('Error fetching cities:', error);
+    }
+  };
 
   const handleSearch = async () => {
     try {
@@ -35,11 +57,9 @@ const SearchPage = () => {
         adults: 1,
       });
 
-      // Navigate to booking page with flight data
       navigate('/booking', { state: { flights: response.data } });
     } catch (error) {
       console.error('Error searching flights:', error);
-      // Add error handling here
     } finally {
       setLoading(false);
     }
@@ -53,19 +73,43 @@ const SearchPage = () => {
         </Typography>
         <Grid container spacing={3}>
           <Grid item xs={12} sm={6}>
-            <TextField
+            <Autocomplete
               fullWidth
-              label="From"
-              value={formData.origin}
-              onChange={(e) => setFormData({ ...formData, origin: e.target.value })}
+              options={originCities}
+              getOptionLabel={(option) => `${option.name} (${option.code})`}
+              onInputChange={(_, value) => {
+                searchCities(value, setOriginCities);
+              }}
+              onChange={(_, value) => {
+                setFormData({ ...formData, origin: value?.code || '' });
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="From"
+                  fullWidth
+                />
+              )}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
-            <TextField
+            <Autocomplete
               fullWidth
-              label="To"
-              value={formData.destination}
-              onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
+              options={destinationCities}
+              getOptionLabel={(option) => `${option.name} (${option.code})`}
+              onInputChange={(_, value) => {
+                searchCities(value, setDestinationCities);
+              }}
+              onChange={(_, value) => {
+                setFormData({ ...formData, destination: value?.code || '' });
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="To"
+                  fullWidth
+                />
+              )}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
