@@ -15,6 +15,8 @@ import { DatePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
 import axios from 'axios';
 
+const API_URL = process.env.VITE_API_URL || 'http://localhost:3001/api';
+
 interface City {
   code: string;
   name: string;
@@ -37,7 +39,7 @@ const SearchPage = () => {
     if (term.length < 2) return;
     
     try {
-      const response = await axios.get(`http://localhost:3001/api/cities`, {
+      const response = await axios.get(`${API_URL}/cities`, {
         params: { term }
       });
       setResults(response.data);
@@ -49,7 +51,7 @@ const SearchPage = () => {
   const handleSearch = async () => {
     try {
       setLoading(true);
-      const response = await axios.post('http://localhost:3001/api/search', {
+      const response = await axios.post(`${API_URL}/search`, {
         origin: formData.origin,
         destination: formData.destination,
         departDate: formData.departDate.format('YYYY-MM-DD'),

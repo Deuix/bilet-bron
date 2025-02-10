@@ -6,9 +6,12 @@ import axios from 'axios';
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3001;
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.SITE_URL || '*',
+  methods: ['GET', 'POST'],
+  credentials: true
+}));
 app.use(express.json());
 
 // Aviasales API endpoints
@@ -74,6 +77,13 @@ app.post('/api/generate-booking', async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-}); 
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+  const port = process.env.PORT || 3001;
+  app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+  });
+}
+
+// For Vercel
+export default app; 
